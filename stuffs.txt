@@ -1,0 +1,3 @@
+mongodb+srv://nodeuser:<password>@farm-cluster.pgopixt.mongodb.net/test
+
+curl -s --location --request GET http://localhost:8080/recipes 
