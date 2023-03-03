@@ -9,3 +9,35 @@ swagger serve -F swagger ./swagger.json
 
 Install swagger with sudo and then create a swagger.json file:
 https://github.com/go-swagger/go-swagger/blob/master/docs/install.md#debian-packages-
+
+Serving swagger:
+swagger serve ./swagger.json
+swagger serve -F swagger ./swagger.json
+
+# Ping Database
+MONGO_URI="mongodb+srv://nodeuser:1aMnodeuser@farm-cluster.pgopixt.mongodb.net/test" go run main.go
+
+# Insert data from JSON file into the Database
+MONGO_URI="mongodb+srv://nodeuser:1aMnodeuser@farm-cluster.pgopixt.mongodb.net/test" MONGO_DATABASE=demo go run main.go
+
+# Insering json into mondo db via go. The code below is placed in the init function
+recipes = make([]Recipe, 0)
+file, _ := ioutil.ReadFile("recipes.json")
+_ = json.Unmarshal([]byte(file), &recipes)
+var listOfRecipes []interface{}
+for _, recipe := range recipes {
+    listOfRecipes = append(listOfRecipes, recipe)
+}
+collection := client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
+insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
+if err != nil {
+    log.Fatal(err)
+}
+log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
+
+# It's worth mentioning that you can use the mongoimport utility to load the recipe.
+# json file directly into the recipes collection without writing a single line of code in
+# Golang. The command for this is as follows:
+mongoimport --username admin --password password
+--authenticationDatabase admin --db demo --collection recipes
+--file recipes.json --jsonArray
