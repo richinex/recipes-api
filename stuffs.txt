@@ -41,3 +41,11 @@ log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 mongoimport --username admin --password password
 --authenticationDatabase admin --db demo --collection recipes
 --file recipes.json --jsonArray
+
+# BSON primitives
+https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
+
+# Redis
+docker run -d --name redis -p 6379:6379 redis:6.0
+# Always check the Docker log to see the chain of events:
+docker logs –f CONTAINER_ID
