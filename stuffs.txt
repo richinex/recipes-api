@@ -41,3 +41,6 @@ log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 mongoimport --username admin --password password
 --authenticationDatabase admin --db demo --collection recipes
 --file recipes.json --jsonArray
+
+# Revert a pull request
+https://stackoverflow.com/questions/6481575/undo-a-merge-by-pull-request
