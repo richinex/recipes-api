@@ -121,6 +121,10 @@ func (appHandler *handlerApplication) updateRecipeHandler(c *gin.Context) {
 	}
 
 	objectID, _ := primitive.ObjectIDFromHex(id)
+
+	// clear the cache before updating the recipe
+	appHandler.recipesHandler.redisClient.Del("recipes")
+
 	_, err = appHandler.recipesHandler.collection.UpdateOne(ctx, bson.M{
 		"_id": objectID,
 	}, bson.D{primitive.E{Key: "$set", Value: bson.D{
