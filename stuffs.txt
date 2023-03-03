@@ -1,3 +1,11 @@
 mongodb+srv://nodeuser:<password>@farm-cluster.pgopixt.mongodb.net/test
 
-curl -s --location --request GET http://localhost:8080/recipes 
+curl -s --location --request GET http://localhost:8080/recipes
+former line:
+deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main
+swagger:
+https://github.com/go-swagger/go-swagger/issues/2633
+swagger serve -F swagger ./swagger.json
+
+Install swagger with sudo and then create a swagger.json file:
+https://github.com/go-swagger/go-swagger/blob/master/docs/install.md#debian-packages-
