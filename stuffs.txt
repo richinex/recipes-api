@@ -42,5 +42,35 @@ mongoimport --username admin --password password
 --authenticationDatabase admin --db demo --collection recipes
 --file recipes.json --jsonArray
 
+docker run -d -v $PWD/conf:/usr/local/etc/redis --name redis -p 6379:6379 redis:6.0
+
 # Revert a pull request
 https://stackoverflow.com/questions/6481575/undo-a-merge-by-pull-request
+
+# redis
+The easiest way to set up Redis is through Docker. We will use the Redis official image
+available at DockerHub for this ( https://hub.docker.com/_/redis ). At the time
+of writing this book, the latest stable version is 6.0. Run a container based on that image:
+docker run -d --name redis -p 6379:6379 redis:6.0
+
+Always check the Docker log to see the chain of events:
+docker logs –f CONTAINER_ID
+
+# We can verify that data is being cached in Redis by running the Redis CLI from the
+# container. Run the following commands:
+docker ps
+docker exec -it CONTAINER_ID bash # to attach to the redis container
+Now that we're attached to the Redis container, we can use the Redis command line:
+redis-cli
+From there, we can use the EXISTS command to check if the recipes key exists:
+EXISTS recipes
+# type exit to leave
+
+# Making multiple requests to check for performance without caching
+ab -n 2000 -c 100 -g without-cache.data http://localhost:8080/recipes
+
+# Next, we will issue the same requests but this time on the API with caching (Redis):
+ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
+
+# GNU plot
+https://wiki.ubuntuusers.de/Gnuplot/
