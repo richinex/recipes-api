@@ -23,13 +23,14 @@ import (
 	"os"
 
 	"github.com/go-redis/redis"
+	"github.com/richinex/recipes-api/internal/models"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type handlerApplication struct {
-	recipesHandler *recipesHandler
+type application struct {
+	recipesModel *models.RecipesModel
 }
 
 var ctx context.Context
@@ -50,13 +51,17 @@ func main() {
 		DB:       0,
 	})
 
-	appHandler := &handlerApplication{
-		recipesHandler: newRecipesHandler(ctx, collection, redisClient),
+	app := &application{
+		recipesModel: &models.RecipesModel{
+			Collection:  collection,
+			Ctx:         ctx,
+			RedisClient: redisClient,
+		},
 	}
 
 	status := redisClient.Ping()
 	log.Println(status)
 
-	appHandler.routes()
+	app.routes()
 
 }

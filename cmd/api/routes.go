@@ -2,12 +2,12 @@ package main
 
 import "github.com/gin-gonic/gin"
 
-func (appHandler *handlerApplication) routes() {
+func (app *application) routes() {
 	router := gin.Default()
-	router.POST("/recipes", appHandler.newRecipeHandler)
-	router.GET("/recipes", appHandler.listRecipesHandler)
-	router.PUT("/recipes/:id", appHandler.updateRecipeHandler)
-	router.DELETE("/recipes/:id", appHandler.deleteRecipeHandler)
-	router.GET("/recipes/:id", appHandler.getOneRecipeHandler)
+	router.POST("/recipes", app.newRecipeHandler)
+	router.GET("/recipes", app.listRecipesHandler)
+	router.PUT("/recipes/:id", app.updateRecipeHandler)
+	router.DELETE("/recipes/:id", app.deleteRecipeHandler)
+	router.GET("/recipes/:id", app.getOneRecipeHandler)
 	router.Run()
 }
