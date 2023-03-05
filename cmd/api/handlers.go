@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,14 +12,13 @@ import (
 	"github.com/richinex/recipes-api/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type recipesHandler struct {
-	collection  *mongo.Collection
-	ctx         context.Context
-	redisClient *redis.Client
-}
+// type recipesHandler struct {
+// 	collection  *mongo.Collection
+// 	ctx         context.Context
+// 	redisClient *redis.Client
+// }
 
 // swagger:operation GET /recipes recipes listRecipes
 // Returns list of recipes
@@ -31,25 +29,25 @@ type recipesHandler struct {
 //
 //	'200':
 //	    description: Successful operation
-func (appHandler *handlerApplication) listRecipesHandler(c *gin.Context) {
-	val, err := appHandler.recipesHandler.redisClient.Get("recipes").Result()
+func (app *application) listRecipesHandler(c *gin.Context) {
+	val, err := app.recipesModel.RedisClient.Get("recipes").Result()
 	if err == redis.Nil {
 		log.Printf("Request to MongoDB")
-		cur, err := appHandler.recipesHandler.collection.Find(appHandler.recipesHandler.ctx, bson.M{})
+		cur, err := app.recipesModel.Collection.Find(app.recipesModel.Ctx, bson.M{})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		defer cur.Close(appHandler.recipesHandler.ctx)
+		defer cur.Close(app.recipesModel.Ctx)
 		recipes := make([]models.Recipe, 0)
-		for cur.Next(appHandler.recipesHandler.ctx) {
+		for cur.Next(app.recipesModel.Ctx) {
 			var recipe models.Recipe
 			cur.Decode(&recipe)
 			recipes = append(recipes, recipe)
 		}
 		data, _ := json.Marshal(recipes)
-		appHandler.recipesHandler.redisClient.Set("recipes", string(data), 0)
+		app.recipesModel.RedisClient.Set("recipes", string(data), 0)
 		c.JSON(http.StatusOK, recipes)
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -72,22 +70,23 @@ func (appHandler *handlerApplication) listRecipesHandler(c *gin.Context) {
 //
 //	'200':
 //	    description: Successful operation
-func (appHandler *handlerApplication) newRecipeHandler(c *gin.Context) {
+func (app *application) newRecipeHandler(c *gin.Context) {
 	var recipe models.Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	recipe.ID = primitive.NewObjectID()
+	log.Println(recipe.ID)
 	recipe.PublishedAt = time.Now()
-	_, err := appHandler.recipesHandler.collection.InsertOne(appHandler.recipesHandler.ctx, recipe)
+	_, err := app.recipesModel.Collection.InsertOne(app.recipesModel.Ctx, recipe)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError,
 			gin.H{"error": "Error while inserting a new recipe"})
 		return
 	}
 	log.Println("Removing data from Redis cache")
-	appHandler.recipesHandler.redisClient.Del("recipes")
+	app.recipesModel.RedisClient.Del("recipes")
 	c.JSON(http.StatusOK, recipe)
 
 }
@@ -112,7 +111,7 @@ func (appHandler *handlerApplication) newRecipeHandler(c *gin.Context) {
 //	    description: Invalid input
 //	'404':
 //	    description: Invalid recipe ID
-func (appHandler *handlerApplication) updateRecipeHandler(c *gin.Context) {
+func (app *application) updateRecipeHandler(c *gin.Context) {
 	id := c.Param("id")
 	var recipe models.Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
@@ -123,9 +122,9 @@ func (appHandler *handlerApplication) updateRecipeHandler(c *gin.Context) {
 	objectID, _ := primitive.ObjectIDFromHex(id)
 
 	// clear the cache before updating the recipe
-	appHandler.recipesHandler.redisClient.Del("recipes")
+	app.recipesModel.RedisClient.Del("recipes")
 
-	_, err = appHandler.recipesHandler.collection.UpdateOne(ctx, bson.M{
+	_, err = app.recipesModel.Collection.UpdateOne(ctx, bson.M{
 		"_id": objectID,
 	}, bson.D{primitive.E{Key: "$set", Value: bson.D{
 		{Key: "name", Value: recipe.Name},
@@ -161,10 +160,10 @@ func (appHandler *handlerApplication) updateRecipeHandler(c *gin.Context) {
 //	    description: Successful operation
 //	'404':
 //	    description: Invalid recipe ID
-func (appHandler *handlerApplication) deleteRecipeHandler(c *gin.Context) {
+func (app *application) deleteRecipeHandler(c *gin.Context) {
 	id := c.Param("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
-	_, err := appHandler.recipesHandler.collection.DeleteOne(ctx, bson.M{
+	_, err := app.recipesModel.Collection.DeleteOne(ctx, bson.M{
 		"_id": objectId,
 	})
 	if err != nil {
@@ -190,10 +189,10 @@ func (appHandler *handlerApplication) deleteRecipeHandler(c *gin.Context) {
 //
 //	'200':
 //	    description: Successful operation
-func (appHandler *handlerApplication) getOneRecipeHandler(c *gin.Context) {
+func (app *application) getOneRecipeHandler(c *gin.Context) {
 	id := c.Param("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
-	cur := appHandler.recipesHandler.collection.FindOne(appHandler.recipesHandler.ctx, bson.M{
+	cur := app.recipesModel.Collection.FindOne(app.recipesModel.Ctx, bson.M{
 		"_id": objectId,
 	})
 	var recipe models.Recipe
@@ -204,12 +203,4 @@ func (appHandler *handlerApplication) getOneRecipeHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, recipe)
-}
-
-func newRecipesHandler(ctx context.Context, collection *mongo.Collection, redisClient *redis.Client) *recipesHandler {
-	return &recipesHandler{
-		collection:  collection,
-		ctx:         ctx,
-		redisClient: redisClient,
-	}
 }

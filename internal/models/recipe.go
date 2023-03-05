@@ -1,9 +1,12 @@
 package models
 
 import (
+	"context"
 	"time"
 
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // swagger:parameters recipes newRecipe
@@ -15,4 +18,10 @@ type Recipe struct {
 	Ingredients  []string           `json:"ingredients" bson:"ingredients"`
 	Instructions []string           `json:"instructions" bson:"instructions"`
 	PublishedAt  time.Time          `json:"publishedAt" bson:"publishedAt"`
+}
+
+type RecipesModel struct {
+	Collection  *mongo.Collection
+	Ctx         context.Context
+	RedisClient *redis.Client
 }
