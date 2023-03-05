@@ -20,6 +20,9 @@ MONGO_URI="mongodb+srv://nodeuser:1aMnodeuser@farm-cluster.pgopixt.mongodb.net/t
 # Insert data from JSON file into the Database
 MONGO_URI="mongodb+srv://nodeuser:1aMnodeuser@farm-cluster.pgopixt.mongodb.net/test" MONGO_DATABASE=demo go run main.go
 
+# Using JWT secret key
+JWT_SECRET=eUbP9shywUygMx7u MONGO_URI="mongodb+srv://nodeuser:1aMnodeuser@farm-cluster.pgopixt.mongodb.net/test?authSource=admin" MONGO_DATABASE=demo go run main.go
+
 # Insering json into mondo db via go. The code below is placed in the init function
 recipes = make([]Recipe, 0)
 file, _ := ioutil.ReadFile("recipes.json")
@@ -54,6 +57,10 @@ available at DockerHub for this ( https://hub.docker.com/_/redis ). At the time
 of writing this book, the latest stable version is 6.0. Run a container based on that image:
 docker run -d --name redis -p 6379:6379 redis:6.0
 
+You can then pass the config at the runtime of the container with the following command:
+docker run -d -v $PWD/conf:/usr/local/etc/redis --name redis -p
+6379:6379 redis:6.0
+
 Always check the Docker log to see the chain of events:
 docker logs –f CONTAINER_ID
 
@@ -75,3 +82,110 @@ ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
 
 # GNU plot
 https://wiki.ubuntuusers.de/Gnuplot/
+
+
+
+func (app *application) deleteIdentityHandler(c *gin.Context) {
+	// Get the user ID from the JWT claims
+	claims := c.MustGet("claims").(*claims)
+	userID, err := primitive.ObjectIDFromHex(claims.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+
+	// Delete the user from the database
+	result, err := app.usersModel.Collection.DeleteOne(app.usersModel.Ctx, bson.M{"_id": userID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Return a success message
+	c.JSON(http.StatusOK, gin.H{"message": "Identity deleted"})
+}
+
+// Uses base64
+func (app *application) signupHandler(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if the user already exists
+	count, err := app.usersModel.Collection.CountDocuments(app.usersModel.Ctx, bson.M{"username": user.Username})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	}
+
+	// Hash the user's password
+	h := sha256.New()
+	hashedPassword := h.Sum([]byte(user.Password))
+
+	// Create the user object to insert
+	newUser := bson.M{
+		"username": user.Username,
+		"password": hashedPassword,
+	}
+
+	// Insert the user into the database
+	result, err := app.usersModel.Collection.InsertOne(app.usersModel.Ctx, newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+
+	// Return the user ID
+	c.JSON(http.StatusOK, gin.H{"user_id": result.InsertedID})
+}
+
+func (app *application) signupHandler(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if the user already exists
+	count, err := app.usersModel.Collection.CountDocuments(app.usersModel.Ctx, bson.M{"username": user.Username})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	}
+
+	// Hash the user's password
+	h := sha256.New()
+	h.Write([]byte(user.Password))
+	hashedPassword := hex.EncodeToString(h.Sum(nil))
+
+	// Create the user object to insert
+	newUser := bson.M{
+		"username": user.Username,
+		"password": hashedPassword,
+	}
+
+	// Insert the user into the database
+	result, err := app.usersModel.Collection.InsertOne(app.usersModel.Ctx, newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+		return
+	}
+
+	// Return the user ID
+	c.JSON(http.StatusOK, gin.H{"user_id": result.InsertedID})
+}

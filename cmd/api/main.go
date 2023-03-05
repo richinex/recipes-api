@@ -31,6 +31,7 @@ import (
 
 type application struct {
 	recipesModel *models.RecipesModel
+	usersModel   *models.UsersModel
 }
 
 var ctx context.Context
@@ -45,6 +46,7 @@ func main() {
 	}
 	log.Println("Connected to MongoDB!")
 	collection := client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
+	collectionUsers := client.Database(os.Getenv("MONGO_DATABASE")).Collection("users")
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
@@ -56,6 +58,9 @@ func main() {
 			Collection:  collection,
 			Ctx:         ctx,
 			RedisClient: redisClient,
+		},
+		usersModel: &models.UsersModel{
+			Collection: collectionUsers,
 		},
 	}
 

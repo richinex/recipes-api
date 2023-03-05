@@ -77,6 +77,7 @@ func (app *application) newRecipeHandler(c *gin.Context) {
 		return
 	}
 	recipe.ID = primitive.NewObjectID()
+	log.Println(recipe.ID)
 	recipe.PublishedAt = time.Now()
 	_, err := app.recipesModel.Collection.InsertOne(app.recipesModel.Ctx, recipe)
 	if err != nil {
@@ -203,11 +204,3 @@ func (app *application) getOneRecipeHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, recipe)
 }
-
-// func newRecipesHandler(ctx context.Context, collection *mongo.Collection, redisClient *redis.Client) *recipesHandler {
-// 	return &recipesHandler{
-// 		collection:  collection,
-// 		ctx:         ctx,
-// 		redisClient: redisClient,
-// 	}
-// }
