@@ -1,13 +1,17 @@
 // Recipes API
 //
-// This is a sample recipes API. You can find out more about the API at https://github.com/richinex/recipes-api.
+//	This is a sample recipes API. You can find out more about the API at https://github.com/richinex/recipes-api.
 //
-//		Schemes: http
-//	 Host: localhost:8080
+//	Schemes: http
+//	Host: localhost:8080
 //		BasePath: /
 //		Version: 1.0.0
 //		Contact: Richard Chukwu <richinex@gmail.com>
-//
+//	SecurityDefinitions:
+//	api_key:
+//	type: apiKey
+//	name: Authorization
+//	in: header
 //		Consumes:
 //		- application/json
 //
@@ -39,6 +43,7 @@ var err error
 var client *mongo.Client
 
 func main() {
+
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
@@ -48,8 +53,8 @@ func main() {
 	collection := client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
 	collectionUsers := client.Database(os.Getenv("MONGO_DATABASE")).Collection("users")
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     os.Getenv("REDIS_URI"),
+		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 
